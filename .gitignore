@@ -44,4 +44,4 @@ app.*.map.json
 /android/app/release
 
 # YOLO models
-/assets/models/*.tflite
+# /assets/models/*.tflite
