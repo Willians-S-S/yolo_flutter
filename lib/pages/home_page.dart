@@ -88,18 +88,15 @@ class _HomePageState extends State<HomePage> {
       inferenceOutput = model.infer(image);
       updatePostprocess();
     }
-    
   }
 
   @override
   Widget build(BuildContext context) {
     final bboxesColors = List<Color>.generate(
       numClasses,
-      (_) =>
-          Color((Random().nextDouble() * 0xFFFFFF).toInt()).withOpacity(1.0),
+      (_) => Color((Random().nextDouble() * 0xFFFFFF).toInt()).withOpacity(1.0),
     );
 
-    
     final double displayWidth = MediaQuery.of(context).size.width;
     late double resizeFactor;
 
@@ -133,52 +130,6 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('YOLO')),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          // Fazer uma função para diminuir o código repetido nos botões
-
-          FloatingActionButton(
-            child: const Icon(Icons.image_outlined),
-            onPressed: () async {
-              final XFile? newImageFile =
-                  await picker.pickImage(source: ImageSource.gallery);
-              if (newImageFile != null) {
-                setState(() {
-                  imageFile = File(newImageFile.path);
-                });
-                final image =
-                    img.decodeImage(await newImageFile.readAsBytes())!;
-                imageWidth = image.width;
-                imageHeight = image.height;
-                inferenceOutput = model.infer(image);
-                updatePostprocess();
-              }
-            },
-          ),
-          const SizedBox(
-            height: 10,
-          ),
-          FloatingActionButton(
-            child: const Icon(Icons.camera_alt),
-            onPressed: () async {
-              final XFile? newImageFile =
-                  await picker.pickImage(source: ImageSource.camera);
-              if (newImageFile != null) {
-                setState(() {
-                  imageFile = File(newImageFile.path);
-                });
-                final image =
-                    img.decodeImage(await newImageFile.readAsBytes())!;
-                imageWidth = image.width;
-                imageHeight = image.height;
-                inferenceOutput = model.infer(image);
-                updatePostprocess();
-              }
-            },
-          ),
-        ],
-      ),
       body: ListView(
         children: [
           SizedBox(
@@ -194,7 +145,66 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(height: 30),
-          // foi tirado código daqui
+          
+          SizedBox(
+            width: 30,
+            height: 80,
+            child: ElevatedButton(
+              onPressed: () async {
+                await pick(ImageSource.gallery);
+              },
+          
+              style: ButtonStyle(
+                fixedSize: MaterialStateProperty.all(const Size(30, 120)),
+          
+                shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.0), 
+                  ),
+                ),
+              ),
+            
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.image_outlined),
+                  Text("Galeria"),
+                ],
+              ),
+            ),
+          ),
+          
+          const SizedBox(
+            height: 20,
+          ),
+
+          SizedBox(
+            width: 30,
+            height: 80,
+            child: ElevatedButton(
+              onPressed: () async {
+                await pick(ImageSource.gallery);
+              },
+          
+              style: ButtonStyle(
+                fixedSize: MaterialStateProperty.all(const Size(30, 120)),
+          
+                shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.0), 
+                  ),
+                ),
+              ),
+            
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.camera_alt),
+                  Text("Galeria"),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
