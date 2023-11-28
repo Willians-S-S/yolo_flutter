@@ -21,8 +21,10 @@ class _HomePageState extends State<HomePage> {
 
   static const double maxImageWidgetHeight = 400;
 
+  final ImagePicker picker = ImagePicker();
+
   final YoloModel model = YoloModel(
-    'assets/models/yolov8n.tflite',
+    'assets/models/yolov8s.tflite',
     inModelWidth,
     inModelHeight,
     numClasses,
@@ -46,131 +48,6 @@ class _HomePageState extends State<HomePage> {
     model.init();
   }
 
-  @override
-  Widget build(BuildContext context) {
-
-    final bboxesColors = List<Color>.generate(
-      numClasses,
-      (_) => Color((Random().nextDouble() * 0xFFFFFF).toInt()).withOpacity(1.0),
-    );
-
-    final ImagePicker picker = ImagePicker();
-    final double displayWidth = MediaQuery.of(context).size.width;
-    late double resizeFactor;
-
-    if (imageWidth != null && imageHeight != null) {
-      double k1 = displayWidth / imageWidth!;
-      double k2 = maxImageWidgetHeight / imageHeight!;
-      resizeFactor = max(k1, k2);
-    }
-
-    List<Bbox> getBboxesWidgets() {
-      List<Bbox> bboxesWidgets = [];
-      for (int i = 0; i < bboxes.length; i++) {
-        final box = bboxes[i];
-        final boxClass = classes[i];
-
-        // Bbox é uma classe que tá no arquivo bbox
-        bboxesWidgets.add(
-          Bbox(
-            box[0] * (displayWidth) * resizeFactor, // x
-            box[1] * (maxImageWidgetHeight) * resizeFactor, // y
-            box[2] * (displayWidth) * resizeFactor, // width
-            box[3] * (maxImageWidgetHeight) * resizeFactor, // height
-            labels[boxClass],
-            scores[i],
-            bboxesColors[boxClass],
-          ),
-        );
-      }
-      return bboxesWidgets;
-    }
-    // List<Bbox> bboxesWidgets = [];
-    // for (int i = 0; i < bboxes.length; i++) {
-    //   final box = bboxes[i];
-    //   final boxClass = classes[i];
-
-    //   // Bbox é uma classe que tá no arquivo bbox
-    //   bboxesWidgets.add(
-    //     Bbox(
-    //       box[0] * (displayWidth) * resizeFactor, // x
-    //       box[1] * (maxImageWidgetHeight) * resizeFactor, // y
-    //       box[2] * (displayWidth) * resizeFactor, // width
-    //       box[3] * (maxImageWidgetHeight) * resizeFactor, // height
-    //       labels[boxClass],
-    //       scores[i],
-    //       bboxesColors[boxClass],
-    //     ),
-    //   );
-    // }
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('YOLO')),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          FloatingActionButton(
-            child: const Icon(Icons.image_outlined),
-            onPressed: () async {
-              final XFile? newImageFile =
-                  await picker.pickImage(source: ImageSource.gallery);
-              if (newImageFile != null) {
-                setState(() {
-                  imageFile = File(newImageFile.path);
-                });
-                final image =
-                    img.decodeImage(await newImageFile.readAsBytes())!;
-                imageWidth = image.width;
-                imageHeight = image.height;
-                inferenceOutput = model.infer(image);
-                updatePostprocess();
-              }
-            },
-          ),
-          const SizedBox(
-            height: 10,
-          ),
-          FloatingActionButton(
-            child: const Icon(Icons.camera_alt),
-            onPressed: () async {
-              final XFile? newImageFile =
-                  await picker.pickImage(source: ImageSource.camera);
-              if (newImageFile != null) {
-                setState(() {
-                  imageFile = File(newImageFile.path);
-                });
-                final image =
-                    img.decodeImage(await newImageFile.readAsBytes())!;
-                imageWidth = image.width;
-                imageHeight = image.height;
-                inferenceOutput = model.infer(image);
-                updatePostprocess();
-              }
-            },
-          ),
-        ],
-      ),
-      body: ListView(
-        children: [
-          SizedBox(
-            height: maxImageWidgetHeight,
-            child: Center(
-              child: Stack(
-                children: [
-                  if (imageFile != null) Image.file(imageFile!),
-                  // ...bboxesWidgets,
-                  for (var widget in getBboxesWidgets()) widget
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 30),
-          // foi tirado código daqui
-        ],
-      ),
-    );
-  }
-
   void updatePostprocess() {
     print("Segundo");
     if (inferenceOutput == null) {
@@ -180,7 +57,7 @@ class _HomePageState extends State<HomePage> {
     List<int> newClasses = [];
     List<List<double>> newBboxes = [];
     List<double> newScores = [];
-    
+
     (newClasses, newBboxes, newScores) = model.postprocess(
       inferenceOutput!.$1,
       inferenceOutput!.$2,
@@ -196,4 +73,132 @@ class _HomePageState extends State<HomePage> {
       scores = newScores;
     });
   }
+
+  Future<void> pick(ImageSource source) async {
+    // final PickedFile = await ImagePicker.pickImage(source: source);
+    final XFile? newImageFile = await picker.pickImage(source: source);
+
+    if (PickedFile != null) {
+      // File? _image = File(PickedFile.path);
+      if (newImageFile != null) {
+        setState(() {
+          imageFile = File(newImageFile.path);
+        });
+        final image = img.decodeImage(await newImageFile.readAsBytes())!;
+        imageWidth = image.width;
+        imageHeight = image.height;
+        inferenceOutput = model.infer(image);
+        updatePostprocess();
+      }
+    }
+  }
+
+    @override
+    Widget build(BuildContext context) {
+      final bboxesColors = List<Color>.generate(
+        numClasses,
+        (_) =>
+            Color((Random().nextDouble() * 0xFFFFFF).toInt()).withOpacity(1.0),
+      );
+
+      
+      final double displayWidth = MediaQuery.of(context).size.width;
+      late double resizeFactor;
+
+      if (imageWidth != null && imageHeight != null) {
+        double k1 = displayWidth / imageWidth!;
+        double k2 = maxImageWidgetHeight / imageHeight!;
+        resizeFactor = max(k1, k2);
+      }
+
+      List<Bbox> getBboxesWidgets() {
+        List<Bbox> bboxesWidgets = [];
+        for (int i = 0; i < bboxes.length; i++) {
+          final box = bboxes[i];
+          final boxClass = classes[i];
+
+          // Bbox é uma classe que tá no arquivo bbox
+          bboxesWidgets.add(
+            Bbox(
+              box[0] * (displayWidth) * resizeFactor, // x
+              box[1] * (maxImageWidgetHeight) * resizeFactor, // y
+              box[2] * (displayWidth) * resizeFactor, // width
+              box[3] * (maxImageWidgetHeight) * resizeFactor, // height
+              labels[boxClass],
+              scores[i],
+              bboxesColors[boxClass],
+            ),
+          );
+        }
+        return bboxesWidgets;
+      }
+
+      return Scaffold(
+        appBar: AppBar(title: const Text('YOLO')),
+        floatingActionButton: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            // Fazer uma função para diminuir o código repetido nos botões
+
+            FloatingActionButton(
+              child: const Icon(Icons.image_outlined),
+              onPressed: () async {
+                final XFile? newImageFile =
+                    await picker.pickImage(source: ImageSource.gallery);
+                if (newImageFile != null) {
+                  setState(() {
+                    imageFile = File(newImageFile.path);
+                  });
+                  final image =
+                      img.decodeImage(await newImageFile.readAsBytes())!;
+                  imageWidth = image.width;
+                  imageHeight = image.height;
+                  inferenceOutput = model.infer(image);
+                  updatePostprocess();
+                }
+              },
+            ),
+            const SizedBox(
+              height: 10,
+            ),
+            FloatingActionButton(
+              child: const Icon(Icons.camera_alt),
+              onPressed: () async {
+                final XFile? newImageFile =
+                    await picker.pickImage(source: ImageSource.camera);
+                if (newImageFile != null) {
+                  setState(() {
+                    imageFile = File(newImageFile.path);
+                  });
+                  final image =
+                      img.decodeImage(await newImageFile.readAsBytes())!;
+                  imageWidth = image.width;
+                  imageHeight = image.height;
+                  inferenceOutput = model.infer(image);
+                  updatePostprocess();
+                }
+              },
+            ),
+          ],
+        ),
+        body: ListView(
+          children: [
+            SizedBox(
+              height: maxImageWidgetHeight,
+              child: Center(
+                child: Stack(
+                  children: [
+                    if (imageFile != null) Image.file(imageFile!),
+                    // ...bboxesWidgets,
+                    for (var widget in getBboxesWidgets()) widget
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 30),
+            // foi tirado código daqui
+          ],
+        ),
+      );
+    }
 }
