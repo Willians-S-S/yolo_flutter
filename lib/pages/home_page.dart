@@ -78,127 +78,125 @@ class _HomePageState extends State<HomePage> {
     // final PickedFile = await ImagePicker.pickImage(source: source);
     final XFile? newImageFile = await picker.pickImage(source: source);
 
-    if (PickedFile != null) {
-      // File? _image = File(PickedFile.path);
-      if (newImageFile != null) {
-        setState(() {
-          imageFile = File(newImageFile.path);
-        });
-        final image = img.decodeImage(await newImageFile.readAsBytes())!;
-        imageWidth = image.width;
-        imageHeight = image.height;
-        inferenceOutput = model.infer(image);
-        updatePostprocess();
-      }
+    if (newImageFile != null) {
+      setState(() {
+        imageFile = File(newImageFile.path);
+      });
+      final image = img.decodeImage(await newImageFile.readAsBytes())!;
+      imageWidth = image.width;
+      imageHeight = image.height;
+      inferenceOutput = model.infer(image);
+      updatePostprocess();
     }
+    
   }
 
-    @override
-    Widget build(BuildContext context) {
-      final bboxesColors = List<Color>.generate(
-        numClasses,
-        (_) =>
-            Color((Random().nextDouble() * 0xFFFFFF).toInt()).withOpacity(1.0),
-      );
+  @override
+  Widget build(BuildContext context) {
+    final bboxesColors = List<Color>.generate(
+      numClasses,
+      (_) =>
+          Color((Random().nextDouble() * 0xFFFFFF).toInt()).withOpacity(1.0),
+    );
 
-      
-      final double displayWidth = MediaQuery.of(context).size.width;
-      late double resizeFactor;
+    
+    final double displayWidth = MediaQuery.of(context).size.width;
+    late double resizeFactor;
 
-      if (imageWidth != null && imageHeight != null) {
-        double k1 = displayWidth / imageWidth!;
-        double k2 = maxImageWidgetHeight / imageHeight!;
-        resizeFactor = max(k1, k2);
+    if (imageWidth != null && imageHeight != null) {
+      double k1 = displayWidth / imageWidth!;
+      double k2 = maxImageWidgetHeight / imageHeight!;
+      resizeFactor = max(k1, k2);
+    }
+
+    List<Bbox> getBboxesWidgets() {
+      List<Bbox> bboxesWidgets = [];
+      for (int i = 0; i < bboxes.length; i++) {
+        final box = bboxes[i];
+        final boxClass = classes[i];
+
+        // Bbox é uma classe que tá no arquivo bbox
+        bboxesWidgets.add(
+          Bbox(
+            box[0] * (displayWidth) * resizeFactor, // x
+            box[1] * (maxImageWidgetHeight) * resizeFactor, // y
+            box[2] * (displayWidth) * resizeFactor, // width
+            box[3] * (maxImageWidgetHeight) * resizeFactor, // height
+            labels[boxClass],
+            scores[i],
+            bboxesColors[boxClass],
+          ),
+        );
       }
+      return bboxesWidgets;
+    }
 
-      List<Bbox> getBboxesWidgets() {
-        List<Bbox> bboxesWidgets = [];
-        for (int i = 0; i < bboxes.length; i++) {
-          final box = bboxes[i];
-          final boxClass = classes[i];
+    return Scaffold(
+      appBar: AppBar(title: const Text('YOLO')),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          // Fazer uma função para diminuir o código repetido nos botões
 
-          // Bbox é uma classe que tá no arquivo bbox
-          bboxesWidgets.add(
-            Bbox(
-              box[0] * (displayWidth) * resizeFactor, // x
-              box[1] * (maxImageWidgetHeight) * resizeFactor, // y
-              box[2] * (displayWidth) * resizeFactor, // width
-              box[3] * (maxImageWidgetHeight) * resizeFactor, // height
-              labels[boxClass],
-              scores[i],
-              bboxesColors[boxClass],
-            ),
-          );
-        }
-        return bboxesWidgets;
-      }
-
-      return Scaffold(
-        appBar: AppBar(title: const Text('YOLO')),
-        floatingActionButton: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            // Fazer uma função para diminuir o código repetido nos botões
-
-            FloatingActionButton(
-              child: const Icon(Icons.image_outlined),
-              onPressed: () async {
-                final XFile? newImageFile =
-                    await picker.pickImage(source: ImageSource.gallery);
-                if (newImageFile != null) {
-                  setState(() {
-                    imageFile = File(newImageFile.path);
-                  });
-                  final image =
-                      img.decodeImage(await newImageFile.readAsBytes())!;
-                  imageWidth = image.width;
-                  imageHeight = image.height;
-                  inferenceOutput = model.infer(image);
-                  updatePostprocess();
-                }
-              },
-            ),
-            const SizedBox(
-              height: 10,
-            ),
-            FloatingActionButton(
-              child: const Icon(Icons.camera_alt),
-              onPressed: () async {
-                final XFile? newImageFile =
-                    await picker.pickImage(source: ImageSource.camera);
-                if (newImageFile != null) {
-                  setState(() {
-                    imageFile = File(newImageFile.path);
-                  });
-                  final image =
-                      img.decodeImage(await newImageFile.readAsBytes())!;
-                  imageWidth = image.width;
-                  imageHeight = image.height;
-                  inferenceOutput = model.infer(image);
-                  updatePostprocess();
-                }
-              },
-            ),
-          ],
-        ),
-        body: ListView(
-          children: [
-            SizedBox(
-              height: maxImageWidgetHeight,
-              child: Center(
-                child: Stack(
-                  children: [
-                    if (imageFile != null) Image.file(imageFile!),
-                    // ...bboxesWidgets,
-                    for (var widget in getBboxesWidgets()) widget
-                  ],
-                ),
+          FloatingActionButton(
+            child: const Icon(Icons.image_outlined),
+            onPressed: () async {
+              final XFile? newImageFile =
+                  await picker.pickImage(source: ImageSource.gallery);
+              if (newImageFile != null) {
+                setState(() {
+                  imageFile = File(newImageFile.path);
+                });
+                final image =
+                    img.decodeImage(await newImageFile.readAsBytes())!;
+                imageWidth = image.width;
+                imageHeight = image.height;
+                inferenceOutput = model.infer(image);
+                updatePostprocess();
+              }
+            },
+          ),
+          const SizedBox(
+            height: 10,
+          ),
+          FloatingActionButton(
+            child: const Icon(Icons.camera_alt),
+            onPressed: () async {
+              final XFile? newImageFile =
+                  await picker.pickImage(source: ImageSource.camera);
+              if (newImageFile != null) {
+                setState(() {
+                  imageFile = File(newImageFile.path);
+                });
+                final image =
+                    img.decodeImage(await newImageFile.readAsBytes())!;
+                imageWidth = image.width;
+                imageHeight = image.height;
+                inferenceOutput = model.infer(image);
+                updatePostprocess();
+              }
+            },
+          ),
+        ],
+      ),
+      body: ListView(
+        children: [
+          SizedBox(
+            height: maxImageWidgetHeight,
+            child: Center(
+              child: Stack(
+                children: [
+                  if (imageFile != null) Image.file(imageFile!),
+                  // ...bboxesWidgets,
+                  for (var widget in getBboxesWidgets()) widget
+                ],
               ),
             ),
-            const SizedBox(height: 30),
-            // foi tirado código daqui
-          ],
-        ),
-      );
-    }
+          ),
+          const SizedBox(height: 30),
+          // foi tirado código daqui
+        ],
+      ),
+    );
+  }
 }
