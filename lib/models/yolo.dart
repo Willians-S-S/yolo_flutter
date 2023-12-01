@@ -24,8 +24,8 @@ class YoloModel {
   // realiza uma inferência
   (List<List<double>>, double, double) infer(Image image) {
     assert(_interpreter != null, 'The model must be initialized');
-
     final imgResized = copyResize(image, width: inWidth, height: inHeight);
+
     final imgNormalized = List.generate(
       inHeight,
       (y) => List.generate(
@@ -37,14 +37,18 @@ class YoloModel {
       ),
     );
 
+
     // output shape:
     // 1 : batch size
     // 4 + 80: left, top, right, bottom and probabilities for each class
     // 8400: num predictions
     final output = [
       List<List<double>>.filled(4 + numClasses, List<double>.filled(8400, 0))
+      // List<List<double>>.filled(4 + numClasses, List<double>.filled(8400, 0))
+      // List<List<double>>.filled(116, List.filled((4 + numClasses)*100, 0.0))
     ];
     int predictionTimeStart = DateTime.now().millisecondsSinceEpoch;
+
     _interpreter!.run([imgNormalized], output);
     debugPrint(
         'Prediction time: ${DateTime.now().millisecondsSinceEpoch - predictionTimeStart} ms');
@@ -63,6 +67,7 @@ class YoloModel {
     List<List<double>> bboxes;
     List<double> scores;
     int nmsTimeStart = DateTime.now().millisecondsSinceEpoch;
+
     (classes, bboxes, scores) = nms(
       unfilteredBboxes,
       confidenceThreshold: confidenceThreshold,
@@ -75,8 +80,12 @@ class YoloModel {
       bbox[1] *= resizeFactorY;
       bbox[2] *= resizeFactorX;
       bbox[3] *= resizeFactorY;
+      // print("box 0 $bbox[0]");
+      // print("box 1 $bbox[1]");
+      // print("box 2 $bbox[2]");
+      // print("box 3 $bbox[3]");
     }
-    debugPrint("bboxes: $bboxes");
+    // debugPrint("bboxes: $bboxes");
 
     return (classes, bboxes, scores);
   }

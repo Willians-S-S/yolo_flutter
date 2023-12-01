@@ -152,10 +152,12 @@ class _HomePageState extends State<HomePage> {
         final box = bboxes[i];
         final boxClass = classes[i];
 
-        // print("box 0 $box[0]");
-        // print("box 1 $box[1]");
-        // print("box 2 $box[2]");
-        // print("box 3 $box[3]");
+        print("box 0 ${box[0]}");
+        print("box 1 ${box[1]}");
+
+        print("box 0 ${box[0] * (displayWidth) * resizeFactor}");
+        print("box 2 ${box[2] * (displayWidth) * resizeFactor}");
+        print("box 3 ${box[3] * (maxImageWidgetHeight) * resizeFactor}");
 
         // Bbox é uma classe que tá no arquivo bbox
         bboxesWidgets.add(

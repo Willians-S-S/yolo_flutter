@@ -41,7 +41,7 @@ class _Home extends State<Home> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: paginaAtual,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Todas'),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.list), label: 'Imagens'),
         ],
         onTap: (pagina) {

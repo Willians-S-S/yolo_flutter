@@ -4,14 +4,6 @@ import 'package:yolo_flutter/database/db.dart';
 class ImageRepository {
   late Database db;
 
-  // setSaldo(double valor) async {
-  //   db = await DB.instance.database;
-
-  //   db.update('dados_images', {
-  //     'saldo': valor,
-  //   });
-  // }
-
   setImage(String caminho, String classe) async {
     db = await DB.instance.database;
     db.update('dadosimages', {"caminho_imagem": caminho, "classe": classe});
@@ -46,7 +38,12 @@ class ImageRepository {
     db.execute('DROP TABLE IF EXISTS dadosimages');
   }
 
+  void deleteValsTable() async{
+    final Database db = await DB.instance.database;
+    await db.delete('dadosimages');
+  }
 }
+
 
 void main() {
   // ImageRepository a = ImageRepository();
