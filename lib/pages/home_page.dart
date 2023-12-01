@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:gallery_saver/gallery_saver.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:yolo_flutter/pages/bbox.dart';
 import 'package:yolo_flutter/models/labels.dart';
 import 'package:yolo_flutter/models/yolo.dart';
+import 'package:yolo_flutter/repositories/images_repository.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,7 +26,7 @@ class _HomePageState extends State<HomePage> {
   final ImagePicker picker = ImagePicker();
 
   final YoloModel model = YoloModel(
-    'assets/models/yolov8s.tflite',
+    'assets/models/yolov8s_seg.tflite',
     inModelWidth,
     inModelHeight,
     numClasses,
@@ -49,7 +51,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   void updatePostprocess() {
-    print("Segundo");
     if (inferenceOutput == null) {
       return;
     }
@@ -72,6 +73,8 @@ class _HomePageState extends State<HomePage> {
       bboxes = newBboxes;
       scores = newScores;
     });
+    ImageRepository db = ImageRepository();
+    db.insertData(imageFile!.path, labels[classes[0]]);
   }
 
   Future<void> pick(ImageSource source) async {
@@ -81,13 +84,22 @@ class _HomePageState extends State<HomePage> {
     if (newImageFile != null) {
       setState(() {
         imageFile = File(newImageFile.path);
+        // saveImage(imageFile!);
       });
+
       final image = img.decodeImage(await newImageFile.readAsBytes())!;
       imageWidth = image.width;
       imageHeight = image.height;
       inferenceOutput = model.infer(image);
       updatePostprocess();
     }
+  }
+
+  saveImage(File imge) async {
+    setState(() {});
+    imageFile = File(imge.path);
+    print("Image file $imageFile");
+    GallerySaver.saveImage(imge.path, albumName: "mediaPred");
   }
 
   @override
@@ -108,6 +120,7 @@ class _HomePageState extends State<HomePage> {
 
     List<Bbox> getBboxesWidgets() {
       List<Bbox> bboxesWidgets = [];
+
       for (int i = 0; i < bboxes.length; i++) {
         final box = bboxes[i];
         final boxClass = classes[i];
@@ -128,6 +141,13 @@ class _HomePageState extends State<HomePage> {
       return bboxesWidgets;
     }
 
+    Future<void> teste() async {
+      ImageRepository db = ImageRepository();
+      List<Map<String, dynamic>> a = await db.getAllItems();
+      // db.deleteDatabase();
+      print(a);
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('YOLO')),
       body: ListView(
@@ -145,25 +165,22 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(height: 30),
-          
           SizedBox(
             width: 30,
             height: 80,
             child: ElevatedButton(
               onPressed: () async {
                 await pick(ImageSource.gallery);
+                teste();
               },
-          
               style: ButtonStyle(
                 fixedSize: MaterialStateProperty.all(const Size(30, 120)),
-          
                 shape: MaterialStateProperty.all<RoundedRectangleBorder>(
                   RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.0), 
+                    borderRadius: BorderRadius.circular(8.0),
                   ),
                 ),
               ),
-            
               child: const Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -173,34 +190,29 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
-          
           const SizedBox(
             height: 20,
           ),
-
           SizedBox(
             width: 30,
             height: 80,
             child: ElevatedButton(
               onPressed: () async {
-                await pick(ImageSource.gallery);
+                await pick(ImageSource.camera);
               },
-          
               style: ButtonStyle(
                 fixedSize: MaterialStateProperty.all(const Size(30, 120)),
-          
                 shape: MaterialStateProperty.all<RoundedRectangleBorder>(
                   RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.0), 
+                    borderRadius: BorderRadius.circular(8.0),
                   ),
                 ),
               ),
-            
               child: const Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.camera_alt),
-                  Text("Galeria"),
+                  Text("Camera"),
                 ],
               ),
             ),

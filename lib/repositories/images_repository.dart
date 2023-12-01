@@ -35,6 +35,17 @@ class ImageRepository {
     );
   }
 
+  void deleteDatabase() async {
+    final Database db = await DB.instance.database;
+  // Obter o diretório do aplicativo para armazenar o banco de dados
+    // String databasesPath = await getDatabasesPath();
+    // String path = join(databasesPath, 'dbimages.db');
+
+    // Excluir o banco de dados se existir
+    // await deleteDatabase();
+    db.execute('DROP TABLE IF EXISTS dadosimages');
+  }
+
 }
 
 void main() {

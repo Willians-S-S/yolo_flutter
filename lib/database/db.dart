@@ -21,7 +21,7 @@ class DB{
   // Essa função inicia o db
   _initDatabase() async {
     return await openDatabase(
-      join(await getDatabasesPath(), 'dbimages.db'),
+      join(await getDatabasesPath(), 'dbimage.db'),
       version: 1,
       onCreate: _onCreate,
     );
