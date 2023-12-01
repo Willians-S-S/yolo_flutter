@@ -26,7 +26,7 @@ class _HomePageState extends State<HomePage> {
   final ImagePicker picker = ImagePicker();
 
   final YoloModel model = YoloModel(
-    'assets/models/yolov8s_seg.tflite',
+    'assets/models/yolov8l.tflite',
     inModelWidth,
     inModelHeight,
     numClasses,
@@ -36,7 +36,8 @@ class _HomePageState extends State<HomePage> {
   double confidenceThreshold = 0.6;
   double iouThreshold = 0.1;
 
-  (List<List<double>>, double, double)? inferenceOutput;
+  Future<void>? updatePostprocessFuture; // nullable future
+
   List<int> classes = [];
   List<List<double>> bboxes = [];
   List<double> scores = [];
@@ -50,48 +51,55 @@ class _HomePageState extends State<HomePage> {
     model.init();
   }
 
-  void updatePostprocess() {
-    if (inferenceOutput == null) {
-      return;
+  Future<int> updatePostprocess() async {
+    if (imageFile != null) {
+      final image = img.decodeImage(await imageFile!.readAsBytes())!;
+      imageWidth = image.width;
+      imageHeight = image.height;
+
+      final inferenceOutput = await model.infer(image);
+      if (inferenceOutput == null) {
+        return 0;
+      }
+
+      List<int> newClasses = [];
+      List<List<double>> newBboxes = [];
+      List<double> newScores = [];
+
+      (newClasses, newBboxes, newScores) = await model.postprocess(
+        inferenceOutput.$1,
+        inferenceOutput.$2,
+        inferenceOutput.$3,
+        confidenceThreshold: confidenceThreshold,
+        iouThreshold: iouThreshold,
+      );
+
+      debugPrint('Detected ${bboxes.length} bboxes');
+      setState(() {
+        classes = newClasses;
+        bboxes = newBboxes;
+        scores = newScores;
+      });
+      ImageRepository db = ImageRepository();
+      // db.insertData(imageFile!.path, labels[classes[0]]);
+      return 1;
+    } else {
+      return 0;
     }
-
-    List<int> newClasses = [];
-    List<List<double>> newBboxes = [];
-    List<double> newScores = [];
-
-    (newClasses, newBboxes, newScores) = model.postprocess(
-      inferenceOutput!.$1,
-      inferenceOutput!.$2,
-      inferenceOutput!.$3,
-      confidenceThreshold: confidenceThreshold,
-      iouThreshold: iouThreshold,
-    );
-
-    debugPrint('Detected ${bboxes.length} bboxes');
-    setState(() {
-      classes = newClasses;
-      bboxes = newBboxes;
-      scores = newScores;
-    });
-    ImageRepository db = ImageRepository();
-    db.insertData(imageFile!.path, labels[classes[0]]);
   }
 
   Future<void> pick(ImageSource source) async {
-    // final PickedFile = await ImagePicker.pickImage(source: source);
     final XFile? newImageFile = await picker.pickImage(source: source);
 
     if (newImageFile != null) {
       setState(() {
         imageFile = File(newImageFile.path);
-        // saveImage(imageFile!);
       });
 
-      final image = img.decodeImage(await newImageFile.readAsBytes())!;
-      imageWidth = image.width;
-      imageHeight = image.height;
-      inferenceOutput = model.infer(image);
-      updatePostprocess();
+      updatePostprocessFuture =
+          updatePostprocess(); // start the update when image picked
+
+      saveImage(imageFile!);
     }
   }
 
@@ -112,7 +120,7 @@ class _HomePageState extends State<HomePage> {
     final double displayWidth = MediaQuery.of(context).size.width;
     late double resizeFactor;
 
-    if (imageWidth != null && imageHeight != null) {
+    if (imageFile != null && imageHeight != null) {
       double k1 = displayWidth / imageWidth!;
       double k2 = maxImageWidgetHeight / imageHeight!;
       resizeFactor = max(k1, k2);
@@ -141,83 +149,104 @@ class _HomePageState extends State<HomePage> {
       return bboxesWidgets;
     }
 
-    Future<void> teste() async {
-      ImageRepository db = ImageRepository();
-      List<Map<String, dynamic>> a = await db.getAllItems();
-      // db.deleteDatabase();
-      print(a);
-    }
+    // ...
+
+    final bboxesWidgets = getBboxesWidgets();
 
     return Scaffold(
       appBar: AppBar(title: const Text('YOLO')),
-      body: ListView(
-        children: [
-          SizedBox(
-            height: maxImageWidgetHeight,
-            child: Center(
-              child: Stack(
+      body: FutureBuilder(
+        future: updatePostprocessFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: Column(
                 children: [
-                  if (imageFile != null) Image.file(imageFile!),
-                  // ...bboxesWidgets,
-                  for (var widget in getBboxesWidgets()) widget
+                  SizedBox(
+                    height: 40,
+                  ),
+                  Center(
+                      child: CircularProgressIndicator(
+                    color: Colors.red,
+                  )),
+                  Center(child: Text("Carrendando")),
                 ],
               ),
-            ),
-          ),
-          const SizedBox(height: 30),
-          SizedBox(
-            width: 30,
-            height: 80,
-            child: ElevatedButton(
-              onPressed: () async {
-                await pick(ImageSource.gallery);
-                teste();
-              },
-              style: ButtonStyle(
-                fixedSize: MaterialStateProperty.all(const Size(30, 120)),
-                shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                  RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.0),
+            );
+          } else if (snapshot.hasError) {
+            return Text('Error: ${snapshot.error}');
+          } else {
+            return ListView(
+              children: [
+                SizedBox(
+                  height: maxImageWidgetHeight,
+                  child: Center(
+                    child: Stack(
+                      children: [
+                        if (imageFile != null) Image.file(imageFile!),
+                        ...bboxesWidgets,
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              child: const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.image_outlined),
-                  Text("Galeria"),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(
-            height: 20,
-          ),
-          SizedBox(
-            width: 30,
-            height: 80,
-            child: ElevatedButton(
-              onPressed: () async {
-                await pick(ImageSource.camera);
-              },
-              style: ButtonStyle(
-                fixedSize: MaterialStateProperty.all(const Size(30, 120)),
-                shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                  RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.0),
+                const SizedBox(height: 30),
+                SizedBox(
+                  width: 30,
+                  height: 80,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      setState(() {
+                        updatePostprocessFuture = updatePostprocess().then((_) =>
+                            null); // set future to complete when loading is finished
+                      });
+                      await pick(ImageSource.gallery);
+                    },
+                    style: ButtonStyle(
+                      fixedSize: MaterialStateProperty.all(const Size(30, 120)),
+                      shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                    ),
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.image_outlined),
+                        Text("Galeria"),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              child: const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.camera_alt),
-                  Text("Camera"),
-                ],
-              ),
-            ),
-          ),
-        ],
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: 30,
+                  height: 80,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await pick(ImageSource.camera);
+                    },
+                    style: ButtonStyle(
+                      fixedSize: MaterialStateProperty.all(const Size(30, 120)),
+                      shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                    ),
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.camera_alt),
+                        Text("Camera"),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+        },
       ),
     );
   }
