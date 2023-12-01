@@ -26,7 +26,7 @@ class _HomePageState extends State<HomePage> {
   final ImagePicker picker = ImagePicker();
 
   final YoloModel model = YoloModel(
-    'assets/models/yolov8l.tflite',
+    'assets/models/yolov8n.tflite',
     inModelWidth,
     inModelHeight,
     numClasses,
@@ -98,8 +98,8 @@ class _HomePageState extends State<HomePage> {
 
       updatePostprocessFuture =
           updatePostprocess(); // start the update when image picked
-
-      saveImage(imageFile!);
+      print("Absolute ${imageFile!.absolute}");
+      // saveImage(imageFile!);
     }
   }
 
