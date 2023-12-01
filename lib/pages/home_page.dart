@@ -81,7 +81,18 @@ class _HomePageState extends State<HomePage> {
         scores = newScores;
       });
       ImageRepository db = ImageRepository();
-      // db.insertData(imageFile!.path, labels[classes[0]]);
+      // String nomeImg = imageFile!.toString().substring(87, 101);
+      String nomeImg = imageFile!.toString().substring(7, 101);
+      // String dir = "/data/user/0/Pictures/mediaPred/$nomeImg";
+      // print("dir $dir");
+      print("dir $nomeImg");
+
+
+      if (classes.isNotEmpty) {
+        print("entrou");
+        db.insertData(nomeImg, labels[classes[0]]);
+      }
+
       return 1;
     } else {
       return 0;
@@ -98,8 +109,14 @@ class _HomePageState extends State<HomePage> {
 
       updatePostprocessFuture =
           updatePostprocess(); // start the update when image picked
-      print("Absolute ${imageFile!.absolute}");
+      // print("Absolute ${imageFile!.toString().substring(87, 100)}");
+
+      // print("Absolute ${imageFile!.toString()}");
       // saveImage(imageFile!);
+      ImageRepository imges = ImageRepository();
+      // imges.deleteValsTable();
+      List<Map<String, dynamic>> a = await imges.getAllItems();
+      print("a $a");
     }
   }
 
