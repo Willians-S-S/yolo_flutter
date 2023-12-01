@@ -8,6 +8,8 @@ import 'package:yolo_flutter/pages/bbox.dart';
 import 'package:yolo_flutter/models/labels.dart';
 import 'package:yolo_flutter/models/yolo.dart';
 import 'package:yolo_flutter/repositories/images_repository.dart';
+import 'package:yolo_flutter/pages/caixadelimitadora.dart';
+// /home/will/Projetos_Flutter/yolo_flutter/lib/pages/caixadelimitadora.dart
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -85,13 +87,12 @@ class _HomePageState extends State<HomePage> {
       String nomeImg = imageFile!.toString().substring(7, 101);
       // String dir = "/data/user/0/Pictures/mediaPred/$nomeImg";
       // print("dir $dir");
-      print("dir $nomeImg");
+      // print("dir $nomeImg");
 
-
-      if (classes.isNotEmpty) {
-        print("entrou");
-        db.insertData(nomeImg, labels[classes[0]]);
-      }
+      // if (classes.isNotEmpty) {
+      //   print("entrou");
+      //   db.insertData(nomeImg, labels[classes[0]]);
+      // }
 
       return 1;
     } else {
@@ -116,7 +117,8 @@ class _HomePageState extends State<HomePage> {
       ImageRepository imges = ImageRepository();
       // imges.deleteValsTable();
       List<Map<String, dynamic>> a = await imges.getAllItems();
-      print("a $a");
+      // print("a $a");
+      box();
     }
   }
 
@@ -149,6 +151,11 @@ class _HomePageState extends State<HomePage> {
       for (int i = 0; i < bboxes.length; i++) {
         final box = bboxes[i];
         final boxClass = classes[i];
+
+        // print("box 0 $box[0]");
+        // print("box 1 $box[1]");
+        // print("box 2 $box[2]");
+        // print("box 3 $box[3]");
 
         // Bbox é uma classe que tá no arquivo bbox
         bboxesWidgets.add(
